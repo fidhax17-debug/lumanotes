@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumaNotes 🌿</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&family=Roboto&family=Courier+Prime&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --olive:#cbd5b1;
+  --dark-olive:#a7b38b;
+  --accent:#3f4a35;
+  --white:#fff;
+}
+body{margin:0;font-family:'Poppins',sans-serif;background:linear-gradient(120deg,#f7f9f5,#e8efe4);color:var(--accent);}
+button{cursor:pointer;border:none;border-radius:10px;padding:10px 20px;font-weight:600;transition:.3s;}
+button:hover{opacity:.8;}
+/* Landing */
+#landing{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;}
+#landing h1{font-size:70px;font-weight:800;margin:0;font-family:'Poppins',sans-serif;}
+#landing p{font-size:22px;margin:15px 0;font-style:italic;color:var(--dark-olive);}
+#landing .buttons{margin-top:20px;}
+#landing .buttons button{margin:0 10px;background:var(--olive);color:white;}
+
+/* Modals */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);justify-content:center;align-items:center;z-index:100;}
+.modal-content{background:var(--white);border-radius:25px;padding:40px;width:350px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.1);position:relative;}
+.close{position:absolute;top:10px;right:15px;cursor:pointer;font-weight:bold;font-size:18px;color:var(--accent);}
+.modal-content input, .modal-content select{width:100%;padding:10px;margin:10px 0;border-radius:10px;border:1px solid var(--dark-olive);outline:none;}
+
+/* Dashboard */
+#dashboard{display:none;padding:30px;text-align:center;}
+#dashboard h2{margin-bottom:10px;}
+#dashboard button{margin-bottom:15px;padding:10px 20px;font-size:16px;font-weight:600;border-radius:15px;border:none;background:var(--dark-olive);color:white;cursor:pointer;transition:.3s;}
+#dashboard button:hover{background:var(--accent);}
+.notes-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;}
+.note-card{background:var(--white);padding:20px;border-radius:20px;width:250px;cursor:pointer;box-shadow:0 5px 10px rgba(0,0,0,.05);transition:.3s;}
+.note-card:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,.1);}
+
+/* Editor */
+#editor-section{display:none;flex-direction:row;height:80vh;padding:20px;}
+.toolbar{width:160px;background:var(--olive);border-right:2px solid var(--dark-olive);display:flex;flex-direction:column;align-items:center;padding:15px;}
+.toolbar button,.toolbar select{width:130px;display:flex;flex-direction:column;align-items:center;margin:5px 0;cursor:pointer;padding:5px;border-radius:10px;border:none;font-size:14px;}
+.editor-container{flex:1;display:flex;justify-content:center;align-items:flex-start;padding:10px;position:relative;}
+#editor{width:70%;height:500px;background:var(--white);border-radius:25px;padding:25px;font-size:17px;box-shadow:inset 0 6px 15px rgba(0,0,0,.05);overflow-y:auto;outline:none;position:relative;}
+img.draggable{position:absolute;cursor:move;border:2px dashed var(--accent);}
+input[type=file]{display:none;}
+@media print{body *{visibility:hidden;}#editor,#editor *{visibility:visible;}#editor{position:absolute;left:0;top:0;width:100%;}}
+</style>
+</head>
+<body>
+
+<!-- Landing -->
+<div id="landing">
+  <h1>LumaNotes 🌿</h1>
+  <p>"Where your ideas bloom, one note at a time."</p>
+  <div class="buttons">
+    <button onclick="openModal('login')">Login</button>
+    <button onclick="openModal('signup')">Sign Up</button>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('loginModal')">&times;</span>
+    <h2>Login</h2>
+    <input type="text" id="loginUser" placeholder="Username">
+    <input type="password" id="loginPass" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div id="signupModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('signupModal')">&times;</span>
+    <h2>Sign Up</h2>
+    <input type="text" id="signupUser" placeholder="Username">
+    <input type="password" id="signupPass" placeholder="Password">
+    <button onclick="signup()">Sign Up</button>
+  </div>
+</div>
+
+<!-- New Note Modal -->
+<div id="newNoteModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('newNoteModal')">&times;</span>
+    <h2>New Note 🌱</h2>
+    <input type="text" id="newNoteTitle" placeholder="Title">
+    <select id="newNotePriority">
+      <option value="Normal">Normal</option>
+      <option value="Important">Important</option>
+      <option value="Less Important">Less Important</option>
+    </select>
+    <button onclick="createNote()">Create</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <h2>🌱 Your Notes</h2>
+  <button onclick="newNote()">+ Add Note</button>
+  <div class="notes-grid" id="notesGrid"></div>
+</div>
+
+<!-- Editor -->
+<div id="editor-section">
+  <div class="toolbar">
+    <button onclick="format('bold')"><i>🅑</i>Bold</button>
+    <button onclick="format('italic')"><i>𝘐</i>Italic</button>
+    <button onclick="format('underline')"><i>U̲</i>Underline</button>
+    <button onclick="format('insertUnorderedList')"><i>•</i>List</button>
+    <button onclick="triggerImage()"><i>🖼️</i>Image</button>
+    <select onchange="setFont(this.value)">
+      <option value="">Font</option>
+      <option value="Poppins">Poppins</option>
+      <option value="Roboto">Roboto</option>
+      <option value="Courier Prime">Courier Prime</option>
+    </select>
+    <select onchange="setFontSize(this.value)">
+      <option value="">Size</option>
+      <option value="14px">14</option>
+      <option value="17px">17</option>
+      <option value="20px">20</option>
+      <option value="24px">24</option>
+    </select>
+    <button onclick="saveNote()">💾 Save</button>
+    <button onclick="downloadPDF()"><i>📄</i>PDF</button>
+    <button onclick="window.print()"><i>🖨️</i>Print</button>
+    <button onclick="backToDashboard()">🏠 Dashboard</button>
+  </div>
+  <div class="editor-container">
+    <div id="editor" contenteditable="true"></div>
+    <input type="file" id="imgInput" accept="image/*" onchange="insertImage(event)">
+  </div>
+</div>
+
+<script>
+// Landing & Modals
+function openModal(type){ document.getElementById(type+'Modal').style.display='flex'; }
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+function closeAllModals(){ closeModal('loginModal'); closeModal('signupModal'); closeModal('newNoteModal'); }
+
+// Signup/Login
+function signup(){
+  const u=document.getElementById("signupUser").value.trim();
+  const p=document.getElementById("signupPass").value.trim();
+  if(!u||!p){alert("Fill both fields!"); return;}
+  if(localStorage.getItem("user_"+u)){alert("User exists!"); return;}
+  localStorage.setItem("user_"+u,p);
+  alert("Signup successful!");
+  closeModal('signupModal');
+}
+function login(){
+  const u=document.getElementById("loginUser").value.trim();
+  const p=document.getElementById("loginPass").value.trim();
+  const stored=localStorage.getItem("user_"+u);
+  if(stored && stored===p){
+    localStorage.setItem("activeUser",u);
+    closeAllModals();
+    document.getElementById('landing').style.display='none';
+    showDashboard();
+  } else alert("Wrong username/password!");
+}
+
+// Dashboard & Notes
+function showDashboard(){
+  document.getElementById("dashboard").style.display='block';
+  document.getElementById("editor-section").style.display='none';
+  const user = localStorage.getItem("activeUser");
+  let notes = JSON.parse(localStorage.getItem("notes_"+user)||"[]");
+  if(notes.length===0){
+    notes.push({title:"Welcome to LumaNotes!", priority:"Normal", content:"Click '+ Add Note' to start!"});
+    localStorage.setItem("notes_"+user, JSON.stringify(notes));
+  }
+  loadNotes();
+}
+
+function loadNotes(){
+  const grid=document.getElementById("notesGrid");
+  const user=localStorage.getItem("activeUser");
+  const notes=JSON.parse(localStorage.getItem("notes_"+user)||"[]");
+  grid.innerHTML='';
+  notes.forEach((n,i)=>{
+    const card=document.createElement("div");
+    card.className='note-card';
+    if(typeof n === "string"){
+      card.innerHTML=n.slice(0,50)+'...';
+    } else {
+      card.innerHTML = `<b>${n.title}</b> <br><small>${n.priority}</small>`;
+    }
+    card.onclick=()=>{ localStorage.setItem("currentNote",i); openEditor(); };
+    grid.appendChild(card);
+  });
+}
+
+function newNote(){
+  document.getElementById('newNoteTitle').value = '';
+  document.getElementById('newNotePriority').value = 'Normal';
+  openModal('newNote');
+}
+
+function createNote(){
+  const title = document.getElementById('newNoteTitle').value.trim();
+  const priority = document.getElementById('newNotePriority').value;
+  if(!title){ alert("Please enter a title!"); return; }
+
+  const user = localStorage.getItem("activeUser");
+  let notes = JSON.parse(localStorage.getItem("notes_"+user)||"[]");
+
+  const newNoteObj = { title: title, priority: priority, content: "" };
+  notes.push(newNoteObj);
+  localStorage.setItem("notes_"+user, JSON.stringify(notes));
+  localStorage.setItem("currentNote", notes.length-1);
+
+  closeModal('newNoteModal');
+  openEditor();
+}
+
+// Editor
+function openEditor(){
+  document.getElementById("dashboard").style.display='none';
+  document.getElementById("editor-section").style.display='flex';
+  const user=localStorage.getItem("activeUser");
+  const index=localStorage.getItem("currentNote");
+  const notes=JSON.parse(localStorage.getItem("notes_"+user)||"[]");
+  document.getElementById("editor").innerHTML=notes[index].content||"";
+}
+
+// Editor Tools
+function format(cmd){ document.execCommand(cmd,false,null);}
+function setFont(f){ document.execCommand("fontName", false, f);}
+function setFontSize(s){ document.execCommand("fontSize", false, 4); document.getElementById("editor").style.fontSize=s; }
+
+function triggerImage(){document.getElementById("imgInput").click();}
+function insertImage(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img = document.createElement("img");
+    img.src=ev.target.result;
+    img.className="draggable";
+    img.style.left="50px";
+    img.style.top="50px";
+    img.style.width="200px";
+    img.style.height="200px";
+    document.getElementById("editor").appendChild(img);
+    makeDraggable(img);
+  };
+  reader.readAsDataURL(file);
+}
+
+function makeDraggable(img){
+  img.onmousedown=function(e){
+    e.preventDefault();
+    let startX=e.clientX, startY=e.clientY;
+    let startLeft=img.offsetLeft, startTop=img.offsetTop;
+    function onMouseMove(ev){
+      img.style.left=startLeft+(ev.clientX-startX)+"px";
+      img.style.top=startTop+(ev.clientY-startY)+"px";
+    }
+    function onMouseUp(){ window.removeEventListener("mousemove",onMouseMove); window.removeEventListener("mouseup",onMouseUp); }
+    window.addEventListener("mousemove",onMouseMove);
+    window.addEventListener("mouseup",onMouseUp);
+  };
+  img.onwheel=function(e){
+    e.preventDefault();
+    const delta = e.deltaY<0 ? 10:-10;
+    img.style.width=(img.offsetWidth+delta)+"px";
+    img.style.height=(img.offsetHeight+delta)+"px";
+  };
+}
+
+function saveNote(){
+  const user=localStorage.getItem("activeUser");
+  const index=localStorage.getItem("currentNote");
+  const notes=JSON.parse(localStorage.getItem("notes_"+user)||"[]");
+  notes[index].content=document.getElementById("editor").innerHTML;
+  localStorage.setItem("notes_"+user, JSON.stringify(notes));
+  alert("Saved 🌿");
+}
+function backToDashboard(){ showDashboard(); }
+
+async function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p","pt","a4");
+  const content = document.getElementById("editor");
+  await doc.html(content,{callback:(pdf)=>pdf.save("LumaNote.pdf"), x:20, y:20, html2canvas:{scale:0.6}});
+}
+</script>
+</body>
+</html>
